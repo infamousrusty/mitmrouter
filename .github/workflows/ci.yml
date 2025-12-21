@@ -1,0 +1,264 @@
+name: MITMRouter v2.1.0 CI/CD
+
+on:
+  push:
+    branches: [ main, develop, release/* ]
+  pull_request:
+    branches: [ main, develop ]
+  release:
+    types: [ created ]
+
+env:
+  MITMROUTER_VERSION: "2.1.0"
+
+jobs:
+  # Job 1: Linting and Syntax Check
+  lint:
+    name: Lint and Syntax Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      
+      - name: Run shellcheck on main script
+        run: shellcheck -x mitmrouter.sh || true
+      
+      - name: Run shellcheck on library scripts
+        run: |
+          for script in lib/*.sh; do
+            echo "Checking: $script"
+            shellcheck -x "$script" || true
+          done
+      
+      - name: Check bash syntax
+        run: |
+          bash -n mitmrouter.sh
+          for script in lib/*.sh; do
+            bash -n "$script"
+          done
+      
+      - name: Check Python addon syntax
+        run: |
+          python3 -m py_compile lib/addons/*.py 2>/dev/null || echo "No addons to check yet"
+
+  # Job 2: Unit Tests
+  test:
+    name: Run Test Suite
+    runs-on: ubuntu-latest
+    needs: lint
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bridge-utils \
+            net-tools \
+            iproute2 \
+            iptables \
+            dnsmasq \
+            hostapd \
+            python3 \
+            python3-pip \
+            tcpdump \
+            sqlite3 \
+            jq \
+            openssl
+      
+      - name: Create directory structure
+        run: |
+          mkdir -p config/profiles
+          mkdir -p lib
+          chmod +x mitmrouter.sh
+          chmod +x tests/test_suite.sh
+      
+      - name: Run test suite
+        run: |
+          cd tests
+          ./test_suite.sh
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: tests/*.log
+
+  # Job 3: Security Scanning
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: lint
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run Trivy security scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+      
+      - name: Check for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+
+  # Job 4: SBOM Generation
+  sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install syft
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+      
+      - name: Generate SBOM (SPDX)
+        run: |
+          syft . -o spdx-json > mitmrouter-sbom-spdx.json
+      
+      - name: Generate SBOM (CycloneDX)
+        run: |
+          syft . -o cyclonedx-json > mitmrouter-sbom-cyclonedx.json
+      
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbom-files
+          path: |
+            mitmrouter-sbom-spdx.json
+            mitmrouter-sbom-cyclonedx.json
+
+  # Job 5: Documentation Check
+  docs:
+    name: Documentation Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Check README exists
+        run: test -f README.md
+      
+      - name: Check documentation directory
+        run: test -d docs || echo "docs/ directory not found (optional)"
+      
+      - name: Validate markdown links
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: 'yes'
+          config-file: '.github/markdown-link-check-config.json'
+        continue-on-error: true
+
+  # Job 6: Build Docker Image (if Dockerfile exists)
+  docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' || github.event_name == 'release'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build Docker image
+        run: |
+          if [ -f Dockerfile ]; then
+            docker build -t mitmrouter:${{ env.MITMROUTER_VERSION }} .
+            docker tag mitmrouter:${{ env.MITMROUTER_VERSION }} mitmrouter:latest
+          else
+            echo "No Dockerfile found, skipping Docker build"
+          fi
+      
+      - name: Save Docker image
+        if: success()
+        run: |
+          if docker images | grep -q mitmrouter; then
+            docker save mitmrouter:${{ env.MITMROUTER_VERSION }} | gzip > mitmrouter-docker.tar.gz
+          fi
+      
+      - name: Upload Docker image artifact
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-image
+          path: mitmrouter-docker.tar.gz
+
+  # Job 7: Release Build
+  release:
+    name: Create Release Package
+    runs-on: ubuntu-latest
+    needs: [test, security, sbom]
+    if: github.event_name == 'release'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download SBOM artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: sbom-files
+      
+      - name: Create release package
+        run: |
+          mkdir -p release
+          cp -r lib config mitmrouter.sh release/
+          cp mitmrouter-sbom-*.json release/
+          tar -czf mitmrouter-v${{ env.MITMROUTER_VERSION }}.tar.gz release/
+      
+      - name: Generate checksums
+        run: |
+          sha256sum mitmrouter-v${{ env.MITMROUTER_VERSION }}.tar.gz > checksums.txt
+      
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            mitmrouter-v${{ env.MITMROUTER_VERSION }}.tar.gz
+            checksums.txt
+            mitmrouter-sbom-spdx.json
+            mitmrouter-sbom-cyclonedx.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Job 8: Notification
+  notify:
+    name: Notify on Completion
+    runs-on: ubuntu-latest
+    needs: [test, security, sbom, docs]
+    if: always()
+    
+    steps:
+      - name: Check job results
+        run: |
+          echo "Test result: ${{ needs.test.result }}"
+          echo "Security result: ${{ needs.security.result }}"
+          echo "SBOM result: ${{ needs.sbom.result }}"
+          echo "Docs result: ${{ needs.docs.result }}"

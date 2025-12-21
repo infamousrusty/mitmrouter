@@ -1,0 +1,36 @@
+# MITMRouter v2.0 Default Configuration
+
+# Network Configuration
+network:
+  wan_interface: eth0
+  wlan_interface: wlan0
+  bridge_name: br0
+
+# WiFi Settings
+wifi:
+  ssid: "MITMRouter-Lab"
+  channel: 6
+  standard: g
+  password: "changeme"
+  hidden: false
+
+# DHCP Configuration
+dhcp:
+  start_ip: 192.168.200.100
+  end_ip: 192.168.200.150
+  subnet_mask: 255.255.255.0
+  gateway: 192.168.200.1
+  lease_time: 3600
+
+# MITMProxy Configuration
+mitmproxy:
+  version: "10.4.2"
+  listen_port: 8080
+  web_port: 8081
+  mode: "transparent"
+  log_level: info
+
+# Logging
+logging:
+  level: INFO
+  output: /var/log/mitmrouter/mitmrouter.log
