@@ -60,7 +60,9 @@ generate_mobile_certs() {
         log_success "Android DER certificate: ${MOBILE_CERT_DIR}/mitmrouter-ca.der"
     fi
     if command -v qrencode &>/dev/null; then
-        local cert_url="http://$(hostname -I | awk '{print $1}'):8000/certs/mitmrouter-ca.pem"
+        # SC2155: declare and assign separately so subshell exit code is visible
+        local cert_url
+        cert_url="http://$(hostname -I | awk '{print $1}'):8000/certs/mitmrouter-ca.pem"
         qrencode -t PNG -o "${MOBILE_CERT_DIR}/install_qr.png" "${cert_url}" 2>/dev/null && \
             log_success "QR code generated: ${MOBILE_CERT_DIR}/install_qr.png"
     fi
@@ -135,20 +137,23 @@ start_cert_server() {
         return 0
     fi
     cd "${CERT_DIR}" || return 1
-    if python3 -m http.server "${port}" &>/dev/null &; then
-        local server_pid=$!
-        echo "${server_pid}" > "${STATE_DIR}/cert_server.pid"
-        local ip_addr
-        ip_addr=$(hostname -I | awk '{print $1}')
-        log_success "Certificate server started (PID: ${server_pid})"
-        log_info "Access certificates at: http://${ip_addr}:${port}/"
-        log_info "iOS profile:  http://${ip_addr}:${port}/mobile/mitmrouter-ca.mobileconfig"
-        log_info "Android DER:  http://${ip_addr}:${port}/mobile/mitmrouter-ca.der"
-        return 0
-    else
+    # Background the server then verify it actually started with kill -0.
+    # 'if cmd &;' is invalid shell syntax (SC1045); background unconditionally.
+    python3 -m http.server "${port}" &>/dev/null &
+    local server_pid=$!
+    sleep 1
+    if ! kill -0 "${server_pid}" 2>/dev/null; then
         log_error "Failed to start certificate server"
         return 1
     fi
+    echo "${server_pid}" > "${STATE_DIR}/cert_server.pid"
+    local ip_addr
+    ip_addr=$(hostname -I | awk '{print $1}')
+    log_success "Certificate server started (PID: ${server_pid})"
+    log_info "Access certificates at: http://${ip_addr}:${port}/"
+    log_info "iOS profile:  http://${ip_addr}:${port}/mobile/mitmrouter-ca.mobileconfig"
+    log_info "Android DER:  http://${ip_addr}:${port}/mobile/mitmrouter-ca.der"
+    return 0
 }
 
 stop_cert_server() {
@@ -177,7 +182,7 @@ check_ca_installation() {
         local tls_count
         tls_count=$(wc -l < "${EVIDENCE_DIR}/tls_connections.jsonl")
         if [[ ${tls_count} -gt 0 ]]; then
-            log_success "✓ TLS interception active (${tls_count} connections)"
+            log_success "TLS interception active (${tls_count} connections)"
             log_info "CA appears to be installed on at least one device"
             return 0
         fi

@@ -73,7 +73,7 @@ load_configuration() {
     log_info "Loading configuration from: ${config_file}"
     parse_yaml "${config_file}"
     validate_config || return 1
-    initialize_classifier  || log_warn "Classifier initialization failed"
+    initialize_classifier    || log_warn "Classifier initialization failed"
     initialize_addon_manager || log_warn "Addon manager initialization failed"
     log_success "Configuration loaded successfully"
 }
@@ -142,41 +142,42 @@ show_status() {
 
     echo ""
     echo "Core Services:"
-    systemctl is-active hostapd >/dev/null 2>&1 && echo "  hostapd: ✓ RUNNING" || echo "  hostapd: ✗ STOPPED"
-    systemctl is-active dnsmasq >/dev/null 2>&1 && echo "  dnsmasq: ✓ RUNNING" || echo "  dnsmasq: ✗ STOPPED"
+    systemctl is-active hostapd >/dev/null 2>&1 && echo "  hostapd: RUNNING" || echo "  hostapd: STOPPED"
+    systemctl is-active dnsmasq >/dev/null 2>&1 && echo "  dnsmasq: RUNNING" || echo "  dnsmasq: STOPPED"
 
     echo ""
     echo "Network Interfaces:"
     # shellcheck disable=SC2154
-    ip link show "${network_bridge_name}" 2>/dev/null && echo "  ${network_bridge_name}: ✓ UP" || echo "  bridge: ✗ DOWN"
+    ip link show "${network_bridge_name}" 2>/dev/null && echo "  ${network_bridge_name}: UP" || echo "  bridge: DOWN"
 
     echo ""
     echo "MITMProxy:"
     if pgrep -f "mitmproxy" >/dev/null 2>&1; then
-        echo "  Status: ✓ RUNNING"
+        echo "  Status: RUNNING"
         echo "  Listen Port: ${mitmproxy_listen_port:-8080}"
         echo "  Web Interface: http://localhost:${mitmproxy_web_port:-8081}"
         local loaded_addons
         loaded_addons=$(list_loaded_addons 2>/dev/null || echo "none")
         echo "  Addons: ${loaded_addons}"
     else
-        echo "  Status: ✗ STOPPED"
+        echo "  Status: STOPPED"
     fi
 
     echo ""
     echo "Traffic Classifier:"
     if pgrep -f "traffic_classifier" >/dev/null 2>&1; then
-        echo "  Status: ✓ RUNNING"
+        echo "  Status: RUNNING"
         local classified_count
         classified_count=$(get_classification_count 2>/dev/null || echo "0")
         echo "  Classified Flows: ${classified_count}"
     else
-        echo "  Status: ✗ STOPPED"
+        echo "  Status: STOPPED"
     fi
 
     if command -v iw &>/dev/null; then
-        # shellcheck disable=SC2154
         local connected
+        # network_wlan_interface is exported at runtime by config_parser.sh
+        # shellcheck disable=SC2154
         connected=$(iw dev "${network_wlan_interface}" station dump 2>/dev/null | grep -c "Station" || echo "0")
         echo ""
         echo "Connected Devices: ${connected}"
@@ -188,7 +189,7 @@ show_status() {
     evidence_files=$(find "${EVIDENCE_DIR}" -type f 2>/dev/null | wc -l)
     echo "  Captured Files: ${evidence_files}"
     if [[ -f "${STATE_DIR}/chain_of_custody.log" ]]; then
-        echo "  Chain-of-Custody: ✓ ENABLED"
+        echo "  Chain-of-Custody: ENABLED"
     fi
 }
 
@@ -222,8 +223,8 @@ classify_traffic() {
 }
 
 show_help() {
-    cat << EOF
-MITMRouter v${MITMROUTER_VERSION} - Linux Router for IoT Traffic Analysis
+    cat << 'EOF'
+MITMRouter v2.1.0 - Linux Router for IoT Traffic Analysis
 
 USAGE:
     ./mitmrouter.sh {up|down|status|restart|logs|export|classify|health} [OPTIONS]
@@ -239,12 +240,10 @@ COMMANDS:
     classify    Apply traffic classification rules
 
 OPTIONS:
-    --profile PROFILE      Configuration profile to use
-                           Available: default, pentest, forensic, pinning, ethernet
-                           (default: default)
+    --profile PROFILE      Configuration profile to use (default: default)
     --config FILE          Custom configuration file path
-    --format FORMAT        Export format: json, pcap, sqlite, html (for export command)
-    --rule RULE            Classification rule to apply (for classify command)
+    --format FORMAT        Export format: json, pcap, sqlite, html
+    --rule RULE            Classification rule to apply
     --help, -h             Display this help message
 
 EXAMPLES:
@@ -253,15 +252,6 @@ EXAMPLES:
     sudo ./mitmrouter.sh export --format json
     sudo ./mitmrouter.sh classify --rule iot_device
     ./mitmrouter.sh status
-
-SYSTEM REQUIREMENTS:
-    Linux (Ubuntu 22.04+ / 24.04 recommended)
-    Root/sudo privileges
-    WiFi interface capable of AP mode (for wifi_ap/hybrid profiles)
-    Two Ethernet interfaces (for ethernet profile)
-    Python 3.10+ (for MITMProxy and addons)
-
-See docs/ for full documentation.
 EOF
 }
 
