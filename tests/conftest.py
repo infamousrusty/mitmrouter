@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 from mitmproxy import http
@@ -48,14 +49,25 @@ def sample_post_flow() -> http.HTTPFlow:
 
 @pytest.fixture
 def https_flow() -> http.HTTPFlow:
-    """An HTTPS flow (TLS established)."""
+    """An HTTPS flow with a mocked TLS-established server connection.
+
+    ``tls_established`` is a read-only computed property on mitmproxy's
+    ``Server`` object; it cannot be set via direct assignment.  We
+    replace ``flow.server_conn`` with a ``MagicMock`` whose
+    ``tls_established`` attribute is pre-set to ``True``.
+    """
     flow = tflow.tflow(resp=tflow.tresp())
     flow.request.host = "secure.example.com"
     flow.request.path = "/api/v2/data"
     flow.request.method = "GET"
     flow.request.scheme = "https"
-    flow.server_conn.tls_established = True
     flow.response.status_code = 200
+
+    mock_server_conn = MagicMock()
+    mock_server_conn.tls_established = True
+    mock_server_conn.cert = None
+    flow.server_conn = mock_server_conn
+
     return flow
 
 

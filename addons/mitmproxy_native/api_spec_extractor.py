@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from mitmproxy import ctx, http
+from mitmproxy import http
 
 from addons.core.addon_base import AbstractAddon
+
+logger = logging.getLogger(__name__)
 
 __addon_manifest__ = {
     "name": "api_spec_extractor",
@@ -67,9 +70,11 @@ class APISpecExtractor(AbstractAddon):
             default=False,
             help="Embed request/response examples in the spec",
         )
-        loader.add_command("spec_export", self.cmd_export, "Export current OpenAPI spec")
+        loader.add_command("spec_export", self.cmd_export)
 
     def configure(self, updated: set[str]) -> None:
+        from mitmproxy import ctx
+
         if "openapi_output_file" in updated:
             self._output_file = Path(ctx.options.openapi_output_file)
             self._output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -101,7 +106,6 @@ class APISpecExtractor(AbstractAddon):
             "responses": {},
         }
 
-        # Request body
         if flow.request.content and "json" in flow.request.headers.get("content-type", ""):
             try:
                 schema = self._infer_schema(json.loads(flow.request.text))
@@ -111,7 +115,6 @@ class APISpecExtractor(AbstractAddon):
             except Exception:  # noqa: BLE001
                 pass
 
-        # Response
         status = str(flow.response.status_code)
         resp_entry: dict[str, Any] = {"description": f"HTTP {status}"}
 
@@ -166,17 +169,17 @@ class APISpecExtractor(AbstractAddon):
         self._spec["info"]["version"] = datetime.now(tz=timezone.utc).strftime("%Y.%m.%d")
 
         try:
-            import yaml  # optional dep
+            import yaml
 
             with self._output_file.open("w", encoding="utf-8") as f:
                 yaml.dump(self._spec, f, default_flow_style=False, allow_unicode=True)
         except ImportError:
             fallback = self._output_file.with_suffix(".json")
             fallback.write_text(json.dumps(self._spec, indent=2), encoding="utf-8")
-            ctx.log.warn("[api_spec_extractor] pyyaml not installed; wrote JSON instead")
+            logger.warning("[api_spec_extractor] pyyaml not installed; wrote JSON instead")
             return
 
-        ctx.log.info(f"[api_spec_extractor] exported OpenAPI spec to {self._output_file}")
+        logger.info("[api_spec_extractor] exported OpenAPI spec to %s", self._output_file)
 
     def cmd_export(self) -> str:
         self._write_spec()

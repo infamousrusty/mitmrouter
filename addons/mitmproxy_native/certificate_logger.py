@@ -5,13 +5,16 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from mitmproxy import ctx, http
+from mitmproxy import http
 
 from addons.core.addon_base import AbstractAddon
+
+logger = logging.getLogger(__name__)
 
 __addon_manifest__ = {
     "name": "certificate_logger",
@@ -58,10 +61,12 @@ class CertificateLogger(AbstractAddon):
             default="/tmp/mitmrouter/certs",
             help="Directory for certificate log files",
         )
-        loader.add_command("certs_export", self.cmd_export, "Export certificate inventory")
-        loader.add_command("certs_status", self.cmd_status, "Show certificate statistics")
+        loader.add_command("certs_export", self.cmd_export)
+        loader.add_command("certs_status", self.cmd_status)
 
     def configure(self, updated: set[str]) -> None:
+        from mitmproxy import ctx
+
         if "certs_output_dir" in updated:
             self._output_dir = Path(ctx.options.certs_output_dir)
             self._output_dir.mkdir(parents=True, exist_ok=True)
@@ -80,24 +85,18 @@ class CertificateLogger(AbstractAddon):
         if fp and fp not in self._seen:
             self._certs.append(info)
             self._seen.add(fp)
-            ctx.log.debug(f"[certificate_logger] logged cert for {flow.request.host}")
+            logger.debug("[certificate_logger] logged cert for %s", flow.request.host)
 
     def shutdown(self) -> None:
         self.export()
 
     @staticmethod
     def _extract(cert: Any, host: str) -> dict[str, Any]:  # noqa: ANN401
-        """Extract structured info from a mitmproxy certificate object.
-
-        The `cryptography` package is an optional runtime dependency; the
-        import is deferred so the addon loads cleanly even without it.
-        ExtensionOID is not referenced here - SAN extraction is handled via
-        the mitmproxy cert wrapper rather than the cryptography API directly.
-        """
+        """Extract structured info from a mitmproxy certificate object."""
         try:
-            import cryptography  # noqa: F401  - availability check only
+            import cryptography  # noqa: F401
         except ImportError:
-            ctx.log.warn("[certificate_logger] cryptography library not installed")
+            logger.warning("[certificate_logger] cryptography library not installed")
             return {}
 
         try:
@@ -123,7 +122,7 @@ class CertificateLogger(AbstractAddon):
                 "fingerprint_sha256": fingerprint,
             }
         except Exception as exc:  # noqa: BLE001
-            ctx.log.error(f"[certificate_logger] extraction error: {exc}")
+            logger.error("[certificate_logger] extraction error: %s", exc)
             return {}
 
     def export(self) -> None:
@@ -150,8 +149,8 @@ class CertificateLogger(AbstractAddon):
             writer.writeheader()
             writer.writerows(self._certs)
 
-        ctx.log.info(
-            f"[certificate_logger] exported {len(self._certs)} certs to {self._output_dir}"
+        logger.info(
+            "[certificate_logger] exported %d certs to %s", len(self._certs), self._output_dir
         )
 
     def cmd_export(self) -> str:

@@ -4,14 +4,17 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from mitmproxy import ctx, http
+from mitmproxy import http
 
 from addons.core.addon_base import AbstractAddon
+
+logger = logging.getLogger(__name__)
 
 __addon_manifest__ = {
     "name": "inventory_tracker",
@@ -64,10 +67,12 @@ class InventoryTracker(AbstractAddon):
             default=True,
             help="Include query parameters in tracking",
         )
-        loader.add_command("inventory_export", self.cmd_export, "Export current inventory")
-        loader.add_command("inventory_status", self.cmd_status, "Show inventory statistics")
+        loader.add_command("inventory_export", self.cmd_export)
+        loader.add_command("inventory_status", self.cmd_status)
 
     def configure(self, updated: set[str]) -> None:
+        from mitmproxy import ctx
+
         if "inventory_output_dir" in updated:
             self._output_dir = Path(ctx.options.inventory_output_dir)
             self._output_dir.mkdir(parents=True, exist_ok=True)
@@ -98,7 +103,7 @@ class InventoryTracker(AbstractAddon):
         self._endpoints.append(entry)
 
         if len(self._endpoints) % 50 == 0:
-            ctx.log.info(f"[inventory_tracker] tracked {len(self._endpoints)} flows")
+            logger.info("[inventory_tracker] tracked %d flows", len(self._endpoints))
 
     def shutdown(self) -> None:
         self.export()
@@ -106,7 +111,7 @@ class InventoryTracker(AbstractAddon):
     def export(self) -> None:
         """Write inventory to disk."""
         if self._output_dir is None:
-            ctx.log.warn("[inventory_tracker] output_dir not configured; skipping export")
+            logger.warning("[inventory_tracker] output_dir not configured; skipping export")
             return
 
         ts = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
@@ -125,7 +130,7 @@ class InventoryTracker(AbstractAddon):
                 ),
                 encoding="utf-8",
             )
-            ctx.log.info(f"[inventory_tracker] exported JSON to {out}")
+            logger.info("[inventory_tracker] exported JSON to %s", out)
 
         if self._format in ("csv", "both"):
             out = self._output_dir / f"inventory_{ts}.csv"
@@ -144,7 +149,7 @@ class InventoryTracker(AbstractAddon):
                 writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
                 writer.writeheader()
                 writer.writerows(self._endpoints)
-            ctx.log.info(f"[inventory_tracker] exported CSV to {out}")
+            logger.info("[inventory_tracker] exported CSV to %s", out)
 
     def cmd_export(self) -> str:
         self.export()
