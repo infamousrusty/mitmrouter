@@ -45,10 +45,6 @@ class CertificateLogger(AbstractAddon):
         self._seen: set[str] = set()
         self._output_dir: Path | None = None
 
-    # ------------------------------------------------------------------ #
-    # Lifecycle                                                           #
-    # ------------------------------------------------------------------ #
-
     def load(self, loader: Any) -> None:  # noqa: ANN401
         loader.add_option(
             name="certs_output_dir",
@@ -63,10 +59,6 @@ class CertificateLogger(AbstractAddon):
         if "certs_output_dir" in updated:
             self._output_dir = Path(ctx.options.certs_output_dir)
             self._output_dir.mkdir(parents=True, exist_ok=True)
-
-    # ------------------------------------------------------------------ #
-    # Event hooks                                                         #
-    # ------------------------------------------------------------------ #
 
     def response(self, flow: http.HTTPFlow) -> None:
         if flow.request.scheme != "https":
@@ -87,15 +79,17 @@ class CertificateLogger(AbstractAddon):
     def shutdown(self) -> None:
         self.export()
 
-    # ------------------------------------------------------------------ #
-    # Extraction                                                          #
-    # ------------------------------------------------------------------ #
-
     @staticmethod
     def _extract(cert: Any, host: str) -> dict[str, Any]:  # noqa: ANN401
-        """Extract structured info from a mitmproxy certificate object."""
+        """Extract structured info from a mitmproxy certificate object.
+
+        The `cryptography` package is an optional runtime dependency; the
+        import is deferred so the addon loads cleanly even without it.
+        ExtensionOID is not referenced here – SAN extraction is handled via
+        the mitmproxy cert wrapper rather than the cryptography API directly.
+        """
         try:
-            from cryptography.x509.oid import ExtensionOID
+            import cryptography  # noqa: F401  – availability check only
         except ImportError:
             ctx.log.warn("[certificate_logger] cryptography library not installed")
             return {}
@@ -123,10 +117,6 @@ class CertificateLogger(AbstractAddon):
             ctx.log.error(f"[certificate_logger] extraction error: {exc}")
             return {}
 
-    # ------------------------------------------------------------------ #
-    # Export                                                              #
-    # ------------------------------------------------------------------ #
-
     def export(self) -> None:
         if self._output_dir is None:
             return
@@ -152,7 +142,7 @@ class CertificateLogger(AbstractAddon):
             writer.writerows(self._certs)
 
         ctx.log.info(
-            f"[certificate_logger] exported {len(self._certs)} certs → {self._output_dir}"
+            f"[certificate_logger] exported {len(self._certs)} certs \u2192 {self._output_dir}"
         )
 
     def cmd_export(self) -> str:

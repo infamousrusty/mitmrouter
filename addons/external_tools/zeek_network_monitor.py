@@ -1,7 +1,6 @@
 """Zeek Network Monitor – high-level protocol analysis via Zeek."""
 from __future__ import annotations
 
-import json
 import logging
 import subprocess
 from pathlib import Path
@@ -45,10 +44,6 @@ class ZeekNetworkMonitor(AbstractAddon):
         self._scripts_dir: Path | None = None
         self._timeout: int = 120
         self._zeek_bin: str = "zeek"
-
-    # ------------------------------------------------------------------ #
-    # Lifecycle                                                           #
-    # ------------------------------------------------------------------ #
 
     def load(self, loader: Any) -> None:  # noqa: ANN401
         loader.add_option(
@@ -118,10 +113,6 @@ class ZeekNetworkMonitor(AbstractAddon):
             ctx.log.error("[zeek] analysis timed out")
         except Exception as exc:  # noqa: BLE001
             ctx.log.error(f"[zeek] unexpected error: {exc}")
-
-    # ------------------------------------------------------------------ #
-    # Helpers                                                             #
-    # ------------------------------------------------------------------ #
 
     def _check_tool(self) -> bool:
         """Return True if Zeek is available."""

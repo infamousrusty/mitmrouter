@@ -28,7 +28,7 @@ class TestInventoryTracker:
         tracker.response(sample_http_flow)
         tracker.response(sample_http_flow)
 
-        key = f"GET:api.example.com/v1/users"
+        key = "GET:api.example.com/v1/users"
         assert tracker._seen[key] == 2
         assert tracker._endpoints[-1]["seen_count"] == 2
 
@@ -62,6 +62,5 @@ class TestInventoryTracker:
 
     def test_no_output_dir_does_not_raise(self, sample_http_flow):
         tracker = InventoryTracker()
-        # _output_dir is None – export should not raise
         tracker.response(sample_http_flow)
         tracker.export()  # should log a warning and return cleanly

@@ -1,7 +1,6 @@
 """Wireshark/TShark Dissector – protocol dissection via TShark."""
 from __future__ import annotations
 
-import json
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -105,7 +104,7 @@ class WiresharkDissector(AbstractAddon):
             )
             if result.returncode == 0:
                 out_file.write_bytes(result.stdout)
-                ctx.log.info(f"[tshark] dissection written → {out_file}")
+                ctx.log.info(f"[tshark] dissection written \u2192 {out_file}")
             else:
                 ctx.log.error(
                     f"[tshark] exited {result.returncode}: {result.stderr.decode()[:500]}"

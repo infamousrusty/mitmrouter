@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import csv
 import json
-import time
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -45,10 +44,6 @@ class InventoryTracker(AbstractAddon):
         self._format: str = "json"
         self._include_query: bool = True
 
-    # ------------------------------------------------------------------ #
-    # Lifecycle                                                           #
-    # ------------------------------------------------------------------ #
-
     def load(self, loader: Any) -> None:  # noqa: ANN401
         loader.add_option(
             name="inventory_output_dir",
@@ -80,10 +75,6 @@ class InventoryTracker(AbstractAddon):
         if "inventory_include_query" in updated:
             self._include_query = ctx.options.inventory_include_query
 
-    # ------------------------------------------------------------------ #
-    # Event hooks                                                         #
-    # ------------------------------------------------------------------ #
-
     def response(self, flow: http.HTTPFlow) -> None:
         key = f"{flow.request.method}:{flow.request.host}{flow.request.path}"
         self._seen[key] += 1
@@ -111,10 +102,6 @@ class InventoryTracker(AbstractAddon):
     def shutdown(self) -> None:
         self.export()
 
-    # ------------------------------------------------------------------ #
-    # Export                                                              #
-    # ------------------------------------------------------------------ #
-
     def export(self) -> None:
         """Write inventory to disk."""
         if self._output_dir is None:
@@ -137,7 +124,7 @@ class InventoryTracker(AbstractAddon):
                 ),
                 encoding="utf-8",
             )
-            ctx.log.info(f"[inventory_tracker] exported JSON → {out}")
+            ctx.log.info(f"[inventory_tracker] exported JSON \u2192 {out}")
 
         if self._format in ("csv", "both"):
             out = self._output_dir / f"inventory_{ts}.csv"
@@ -147,11 +134,7 @@ class InventoryTracker(AbstractAddon):
                 writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
                 writer.writeheader()
                 writer.writerows(self._endpoints)
-            ctx.log.info(f"[inventory_tracker] exported CSV → {out}")
-
-    # ------------------------------------------------------------------ #
-    # Commands                                                            #
-    # ------------------------------------------------------------------ #
+            ctx.log.info(f"[inventory_tracker] exported CSV \u2192 {out}")
 
     def cmd_export(self) -> str:
         self.export()

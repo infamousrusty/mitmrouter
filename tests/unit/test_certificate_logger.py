@@ -1,8 +1,6 @@
 """Unit tests for certificate_logger addon."""
 from __future__ import annotations
 
-import json
-
 import pytest
 
 from addons.mitmproxy_native.certificate_logger import CertificateLogger
@@ -26,7 +24,6 @@ class TestCertificateLogger:
 
     def test_deduplicates_by_fingerprint(self):
         logger = CertificateLogger()
-        # Inject a fake entry directly to test dedup logic
         fake_cert = {
             "timestamp": "2026-04-11T00:00:00+00:00",
             "host": "example.com",
@@ -39,7 +36,6 @@ class TestCertificateLogger:
         logger._certs.append(fake_cert)
         logger._seen.add("deadbeef")
 
-        # A second insertion with same fingerprint should be ignored
         assert "deadbeef" in logger._seen
         assert len(logger._certs) == 1
 

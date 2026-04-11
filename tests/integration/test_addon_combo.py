@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import pytest
-from mitmproxy.test import taddons, tflow
+from mitmproxy.test import taddons
 
 
 @pytest.mark.light

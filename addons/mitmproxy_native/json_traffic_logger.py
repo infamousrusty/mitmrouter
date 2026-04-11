@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -45,10 +44,6 @@ class JSONTrafficLogger(AbstractAddon):
         self._flow_count: int = 0
         self._fh: Any = None  # open file handle
 
-    # ------------------------------------------------------------------ #
-    # Lifecycle                                                           #
-    # ------------------------------------------------------------------ #
-
     def load(self, loader: Any) -> None:  # noqa: ANN401
         loader.add_option(
             name="traffic_log_file",
@@ -83,19 +78,11 @@ class JSONTrafficLogger(AbstractAddon):
             self._fh = None
         ctx.log.info("[json_traffic_logger] logged %d flows", self._flow_count)
 
-    # ------------------------------------------------------------------ #
-    # Event hooks                                                         #
-    # ------------------------------------------------------------------ #
-
     def response(self, flow: http.HTTPFlow) -> None:
         self._write(flow, error=None)
 
     def error(self, flow: http.HTTPFlow) -> None:
         self._write(flow, error=str(flow.error) if flow.error else "unknown error")
-
-    # ------------------------------------------------------------------ #
-    # Internal                                                            #
-    # ------------------------------------------------------------------ #
 
     def _write(self, flow: http.HTTPFlow, error: str | None) -> None:
         if self._fh is None:
