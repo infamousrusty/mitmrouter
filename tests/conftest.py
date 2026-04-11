@@ -7,7 +7,8 @@ from typing import Any
 
 import pytest
 from mitmproxy import http
-from mitmproxy.test import taddons, tflow
+from mitmproxy.test import taddons
+from mitmproxy.test import tflow
 
 
 # ------------------------------------------------------------------ #
