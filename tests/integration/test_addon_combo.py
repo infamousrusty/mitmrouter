@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
+from mitmproxy import http
 from mitmproxy.test import taddons
 
 
 @pytest.mark.light
-def test_inventory_and_json_logger_coexist(sample_http_flow, tmp_path):
+def test_inventory_and_json_logger_coexist(
+    sample_http_flow: http.HTTPFlow,
+    tmp_path: Path,
+) -> None:
     """Both addons should handle the same flow without conflict."""
     from addons.mitmproxy_native.inventory_tracker import InventoryTracker
     from addons.mitmproxy_native.json_traffic_logger import JSONTrafficLogger
@@ -33,7 +39,11 @@ def test_inventory_and_json_logger_coexist(sample_http_flow, tmp_path):
 
 
 @pytest.mark.light
-def test_inventory_and_api_spec_coexist(sample_http_flow, sample_post_flow, tmp_path):
+def test_inventory_and_api_spec_coexist(
+    sample_http_flow: http.HTTPFlow,
+    sample_post_flow: http.HTTPFlow,
+    tmp_path: Path,
+) -> None:
     """inventory_tracker and api_spec_extractor should coexist on the same flows."""
     from addons.mitmproxy_native.api_spec_extractor import APISpecExtractor
     from addons.mitmproxy_native.inventory_tracker import InventoryTracker

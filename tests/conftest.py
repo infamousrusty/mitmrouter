@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
+from typing import Any
+
 import pytest
 from mitmproxy import http
 from mitmproxy.test import taddons, tflow
@@ -61,7 +64,7 @@ def https_flow() -> http.HTTPFlow:
 
 
 @pytest.fixture
-def addon_ctx():
+def addon_ctx() -> Generator[Any, None, None]:
     """Provide a mitmproxy taddons.context() for integration tests."""
     with taddons.context() as tctx:
         yield tctx

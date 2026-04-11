@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+from typing import Any
+
 import pytest
 
 from addons.mitmproxy_native.certificate_logger import CertificateLogger
@@ -11,19 +14,19 @@ from addons.mitmproxy_native.certificate_logger import CertificateLogger
 class TestCertificateLogger:
     """Isolated unit tests – no I/O, no real TLS certs."""
 
-    def test_skips_http_flows(self, sample_http_flow):
+    def test_skips_http_flows(self, sample_http_flow: Any) -> None:
         logger = CertificateLogger()
         logger.response(sample_http_flow)
         assert len(logger._certs) == 0
 
-    def test_skips_untested_tls(self, https_flow):
+    def test_skips_untested_tls(self, https_flow: Any) -> None:
         """If server_conn has no cert, nothing should be logged."""
         https_flow.server_conn.cert = None
         logger = CertificateLogger()
         logger.response(https_flow)
         assert len(logger._certs) == 0
 
-    def test_deduplicates_by_fingerprint(self):
+    def test_deduplicates_by_fingerprint(self) -> None:
         logger = CertificateLogger()
         fake_cert = {
             "timestamp": "2026-04-11T00:00:00+00:00",
@@ -40,7 +43,7 @@ class TestCertificateLogger:
         assert "deadbeef" in logger._seen
         assert len(logger._certs) == 1
 
-    def test_export_writes_files(self, tmp_path):
+    def test_export_writes_files(self, tmp_path: Path) -> None:
         logger = CertificateLogger()
         logger._output_dir = tmp_path
         logger._certs = [
