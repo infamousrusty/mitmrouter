@@ -1,8 +1,7 @@
-"""Abstract base class for all mitmrouter addons."""
+"""Base class for all mitmrouter addons."""
 
 from __future__ import annotations
 
-import abc
 import logging
 from typing import Any
 
@@ -11,15 +10,13 @@ from mitmproxy import http
 logger = logging.getLogger(__name__)
 
 
-class AbstractAddon(abc.ABC):
-    """Base class every addon must inherit from.
+class AbstractAddon:
+    """Base class every addon should inherit from.
 
     All mitmproxy lifecycle hooks are provided as no-op default
-    implementations (``...`` bodies) so subclasses can override only
-    the events they care about.  The class is marked abstract so that
-    direct instantiation is prevented, but no individual method is
-    @abstractmethod because none is mandatorily required by the
-    framework.
+    implementations so subclasses can override only the events they
+    care about.  No method is mandatory – this is a mixin, not an
+    abstract interface.
     """
 
     # ------------------------------------------------------------------ #
@@ -28,31 +25,24 @@ class AbstractAddon(abc.ABC):
 
     def load(self, loader: Any) -> None:  # noqa: ANN401
         """Declare options and CLI commands at startup."""
-        ...
 
     def configure(self, updated: set[str]) -> None:
         """React to option changes."""
-        ...
 
     def running(self) -> None:
         """Called once the proxy is fully running."""
-        ...
 
     def request(self, flow: http.HTTPFlow) -> None:  # noqa: ARG002
         """Intercept an HTTP request."""
-        ...
 
     def response(self, flow: http.HTTPFlow) -> None:  # noqa: ARG002
         """Intercept an HTTP response."""
-        ...
 
     def error(self, flow: http.HTTPFlow) -> None:  # noqa: ARG002
         """Handle a flow error."""
-        ...
 
     def shutdown(self) -> None:
         """Flush buffers and clean up on shutdown."""
-        ...
 
     # ------------------------------------------------------------------ #
     # Health-check API                                                   #
