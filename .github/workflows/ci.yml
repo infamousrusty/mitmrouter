@@ -33,7 +33,10 @@ jobs:
       - name: Install Ruff
         run: pip install ruff==0.4.4
 
-      - name: Ruff lint
+      - name: Ruff lint (auto-fix safe rules)
+        run: ruff check --fix addons/ tests/
+
+      - name: Ruff lint (verify – no unfixable errors remain)
         run: ruff check addons/ tests/
 
       - name: Ruff format (auto-fix)
