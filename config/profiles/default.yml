@@ -1,4 +1,8 @@
-# MITMRouter v2.0 Default Configuration
+# MITMRouter — Default Profile
+# ---------------------------------------------------------------------------
+# Sensitive values MUST be supplied via environment variables.
+# Copy .env.example → .env and populate before running mitmrouter.
+# ---------------------------------------------------------------------------
 
 # Network Configuration
 network:
@@ -11,7 +15,9 @@ wifi:
   ssid: "MITMRouter-Lab"
   channel: 6
   standard: g
-  password: "changeme"
+  # Set MITMROUTER_WIFI_PASSWORD in your environment or .env file.
+  # Never commit a real password here.
+  password: "${MITMROUTER_WIFI_PASSWORD}"
   hidden: false
 
 # DHCP Configuration
@@ -34,3 +40,15 @@ mitmproxy:
 logging:
   level: INFO
   output: /var/log/mitmrouter/mitmrouter.log
+
+# Addons — enabled for default profile
+addons:
+  enabled:
+    - inventory_tracker
+    - json_traffic_logger
+    - certificate_logger
+    - api_spec_extractor
+  disabled:
+    - suricata_ids
+    - wireshark_dissector
+    - zeek_network_monitor

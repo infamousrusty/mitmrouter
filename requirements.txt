@@ -1,0 +1,9 @@
+# MITMRouter — Python Runtime Dependencies
+# ---------------------------------------------------------------------------
+# Pin exact versions for reproducible builds.
+# Regenerate with: pip-compile requirements.in --generate-hashes
+# ---------------------------------------------------------------------------
+
+mitmproxy>=10.3.1,<11
+cryptography>=42.0.8,<43
+pyyaml>=6.0.2,<7
