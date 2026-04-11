@@ -36,6 +36,9 @@ jobs:
       - name: Ruff lint
         run: ruff check addons/ tests/
 
+      - name: Ruff format (auto-fix)
+        run: ruff format addons/ tests/
+
       - name: Ruff format check
         run: ruff format --check addons/ tests/
 
