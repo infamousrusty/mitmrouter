@@ -1,58 +1,47 @@
 #!/bin/bash
 ################################################################################
 # MITMRouter Error Handling System
-# Provides centralized error handling, trapping, and recovery
+# Provides centralised error handling, trapping, and recovery
 ################################################################################
 
-# Enable strict error handling
 set -o pipefail
 
 # Global error state
-declare -g LAST_ERROR=""
-declare -g ERROR_COUNT=0
-declare -g SCRIPT_FAILED=0
+# Exported so trap handlers and sub-processes can read / set them.
+declare -gx LAST_ERROR=""
+declare -g  ERROR_COUNT=0
+declare -gx SCRIPT_FAILED=0
 
 # Error trap handler
 trap_error() {
     local line_number=$1
     local exit_code=$2
-    
-    # Log the error
+
     log_error "Error on line ${line_number} (exit code: ${exit_code})"
-    
-    # Increment error counter
-    ((ERROR_COUNT++))
-    
-    # Try to provide context
-    if [[ -n "${BASH_SOURCE[1]}" ]]; then
+    (( ERROR_COUNT++ ))
+
+    if [[ -n "${BASH_SOURCE[1]:-}" ]]; then
         log_error "Location: ${BASH_SOURCE[1]}:${line_number}"
     fi
-    
-    # Store error for later reference
+
     LAST_ERROR="Error at line ${line_number} with exit code ${exit_code}"
-    
-    # Don't exit immediately - let the script decide
+    SCRIPT_FAILED=1
     return 0
 }
 
 # Exit trap handler for cleanup
 trap_exit() {
     local exit_code=$?
-    
     if [[ ${exit_code} -ne 0 ]]; then
         log_error "Script exiting with code: ${exit_code}"
     else
         log_info "Script completed successfully"
     fi
-    
-    # Run cleanup functions
     cleanup_on_exit
 }
 
-# Cleanup function - override in your script as needed
+# Cleanup function — override in your script as needed
 cleanup_on_exit() {
-    # Default: do nothing
-    # Override in main script to add custom cleanup
     return 0
 }
 
@@ -65,7 +54,6 @@ trap trap_exit EXIT
 try_run() {
     local cmd="$*"
     log_debug "Running: ${cmd}"
-    
     if eval "${cmd}"; then
         log_debug "Command succeeded: ${cmd}"
         return 0
@@ -82,24 +70,21 @@ try_run_with_retry() {
     local delay="${2:-2}"
     shift 2
     local cmd="$*"
-    
+
     local attempt=1
     while [[ ${attempt} -le ${max_attempts} ]]; do
         log_info "Attempt ${attempt}/${max_attempts}: ${cmd}"
-        
         if eval "${cmd}"; then
             log_success "Command succeeded on attempt ${attempt}"
             return 0
         fi
-        
         if [[ ${attempt} -lt ${max_attempts} ]]; then
             log_warn "Attempt ${attempt} failed, retrying in ${delay}s..."
             sleep "${delay}"
         fi
-        
-        ((attempt++))
+        (( attempt++ ))
     done
-    
+
     log_error "Command failed after ${max_attempts} attempts: ${cmd}"
     return 1
 }
@@ -107,36 +92,30 @@ try_run_with_retry() {
 # Check command exists
 require_command() {
     local cmd="$1"
-    
     if ! command -v "${cmd}" &>/dev/null; then
         log_error "Required command not found: ${cmd}"
         return 1
     fi
-    
     return 0
 }
 
 # Check file exists and is readable
 require_file() {
     local file="$1"
-    
     if [[ ! -r "${file}" ]]; then
         log_error "Required file not found or not readable: ${file}"
         return 1
     fi
-    
     return 0
 }
 
 # Check directory exists and is writable
 require_directory() {
     local dir="$1"
-    
     if [[ ! -w "${dir}" ]]; then
         log_error "Required directory not found or not writable: ${dir}"
         return 1
     fi
-    
     return 0
 }
 
@@ -144,10 +123,8 @@ require_directory() {
 verify_output() {
     local cmd="$1"
     local expected_pattern="$2"
-    
     local output
     output=$(eval "${cmd}" 2>&1) || return 1
-    
     if [[ ${output} =~ ${expected_pattern} ]]; then
         return 0
     else
@@ -161,12 +138,10 @@ verify_output() {
 assert() {
     local condition="$1"
     local message="${2:-Assertion failed: ${condition}}"
-    
     if ! eval "[[ ${condition} ]]" 2>/dev/null; then
         log_error "${message}"
         return 1
     fi
-    
     return 0
 }
 
@@ -174,28 +149,16 @@ assert() {
 handle_error() {
     local message="$1"
     local should_exit="${2:-true}"
-    
     log_error "${message}"
-    ((ERROR_COUNT++))
-    
+    (( ERROR_COUNT++ ))
+    SCRIPT_FAILED=1
     if [[ "${should_exit}" == "true" ]]; then
         exit 1
     fi
-    
     return 1
 }
 
 # Get error count
-get_error_count() {
-    echo "${ERROR_COUNT}"
-}
-
-# Reset error counter
-reset_error_count() {
-    ERROR_COUNT=0
-}
-
-# Check if any errors occurred
-had_errors() {
-    [[ ${ERROR_COUNT} -gt 0 ]]
-}
+get_error_count()  { echo "${ERROR_COUNT}"; }
+reset_error_count() { ERROR_COUNT=0; }
+had_errors()        { [[ ${ERROR_COUNT} -gt 0 ]]; }
