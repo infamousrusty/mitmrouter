@@ -96,7 +96,8 @@ class ZeekNetworkMonitor(AbstractAddon):
             for script in sorted(self._scripts_dir.glob("*.zeek")):
                 cmd += ["-s", str(script)]
 
-        ctx.log.info(f"[zeek] running: {' '.join(cmd)}")
+        joined = " ".join(cmd)
+        ctx.log.info(f"[zeek] running: {joined}")
         try:
             result = subprocess.run(
                 cmd,

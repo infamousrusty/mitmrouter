@@ -55,7 +55,7 @@ class TestAPISpecExtractor:
         extractor = APISpecExtractor()
         extractor._output_file = tmp_path / "spec.yaml"
         extractor._spec["paths"]["/test"] = {
-            "get": {"responses": {"200": {"description": "ok"}}}
+            "get": {"responses": {"200": {"description": "ok"}}},
         }
 
         monkeypatch.setattr(builtins, "__import__", mock_import)

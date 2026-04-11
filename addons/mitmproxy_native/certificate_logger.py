@@ -91,11 +91,11 @@ class CertificateLogger(AbstractAddon):
 
         The `cryptography` package is an optional runtime dependency; the
         import is deferred so the addon loads cleanly even without it.
-        ExtensionOID is not referenced here – SAN extraction is handled via
+        ExtensionOID is not referenced here - SAN extraction is handled via
         the mitmproxy cert wrapper rather than the cryptography API directly.
         """
         try:
-            import cryptography  # noqa: F401  – availability check only
+            import cryptography  # noqa: F401  - availability check only
         except ImportError:
             ctx.log.warn("[certificate_logger] cryptography library not installed")
             return {}
@@ -105,13 +105,12 @@ class CertificateLogger(AbstractAddon):
             issuer = cert.get_issuer().CN or ""
             not_before = cert.get_notBefore().decode()
             not_after = cert.get_notAfter().decode()
+            serialization = __import__(
+                "cryptography.hazmat.primitives.serialization",
+                fromlist=["Encoding"],
+            )
             fingerprint = hashlib.sha256(
-                cert.to_cryptography().public_bytes(
-                    __import__(
-                        "cryptography.hazmat.primitives.serialization",
-                        fromlist=["Encoding"],
-                    ).Encoding.DER
-                )
+                cert.to_cryptography().public_bytes(serialization.Encoding.DER)
             ).hexdigest()
 
             return {
@@ -152,7 +151,7 @@ class CertificateLogger(AbstractAddon):
             writer.writerows(self._certs)
 
         ctx.log.info(
-            f"[certificate_logger] exported {len(self._certs)} certs → {self._output_dir}"
+            f"[certificate_logger] exported {len(self._certs)} certs to {self._output_dir}"
         )
 
     def cmd_export(self) -> str:

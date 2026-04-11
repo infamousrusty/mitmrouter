@@ -125,7 +125,7 @@ class InventoryTracker(AbstractAddon):
                 ),
                 encoding="utf-8",
             )
-            ctx.log.info(f"[inventory_tracker] exported JSON → {out}")
+            ctx.log.info(f"[inventory_tracker] exported JSON to {out}")
 
         if self._format in ("csv", "both"):
             out = self._output_dir / f"inventory_{ts}.csv"
@@ -144,7 +144,7 @@ class InventoryTracker(AbstractAddon):
                 writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
                 writer.writeheader()
                 writer.writerows(self._endpoints)
-            ctx.log.info(f"[inventory_tracker] exported CSV → {out}")
+            ctx.log.info(f"[inventory_tracker] exported CSV to {out}")
 
     def cmd_export(self) -> str:
         self.export()

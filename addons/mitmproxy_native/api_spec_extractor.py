@@ -176,7 +176,7 @@ class APISpecExtractor(AbstractAddon):
             ctx.log.warn("[api_spec_extractor] pyyaml not installed; wrote JSON instead")
             return
 
-        ctx.log.info(f"[api_spec_extractor] exported OpenAPI spec → {self._output_file}")
+        ctx.log.info(f"[api_spec_extractor] exported OpenAPI spec to {self._output_file}")
 
     def cmd_export(self) -> str:
         self._write_spec()
