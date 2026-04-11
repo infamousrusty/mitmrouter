@@ -1,4 +1,5 @@
 """Certificate Logger – extract and catalogue TLS/SSL certificates."""
+
 from __future__ import annotations
 
 import csv
@@ -32,8 +33,13 @@ __addon_manifest__ = {
 }
 
 _CSV_FIELDS = [
-    "timestamp", "host", "subject", "issuer",
-    "not_valid_before", "not_valid_after", "fingerprint_sha256",
+    "timestamp",
+    "host",
+    "subject",
+    "issuer",
+    "not_valid_before",
+    "not_valid_after",
+    "fingerprint_sha256",
 ]
 
 
@@ -99,10 +105,14 @@ class CertificateLogger(AbstractAddon):
             issuer = cert.get_issuer().CN or ""
             not_before = cert.get_notBefore().decode()
             not_after = cert.get_notAfter().decode()
-            fingerprint = hashlib.sha256(cert.to_cryptography().public_bytes(
-                __import__("cryptography.hazmat.primitives.serialization",
-                           fromlist=["Encoding"]).Encoding.DER
-            )).hexdigest()
+            fingerprint = hashlib.sha256(
+                cert.to_cryptography().public_bytes(
+                    __import__(
+                        "cryptography.hazmat.primitives.serialization",
+                        fromlist=["Encoding"],
+                    ).Encoding.DER
+                )
+            ).hexdigest()
 
             return {
                 "timestamp": datetime.now(tz=timezone.utc).isoformat(),
@@ -142,7 +152,7 @@ class CertificateLogger(AbstractAddon):
             writer.writerows(self._certs)
 
         ctx.log.info(
-            f"[certificate_logger] exported {len(self._certs)} certs \u2192 {self._output_dir}"
+            f"[certificate_logger] exported {len(self._certs)} certs → {self._output_dir}"
         )
 
     def cmd_export(self) -> str:

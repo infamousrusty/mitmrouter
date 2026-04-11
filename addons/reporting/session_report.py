@@ -7,6 +7,7 @@ This is a Phase 2 stub.  The manifest and class skeleton are intentionally
 minimal so the registry does not raise on discovery.  Full implementation
 will be completed in the Phase 2 milestone (see docs/phase-roadmaps/phase-2.md).
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -27,7 +28,11 @@ __addon_manifest__ = {
     "supported_modes": ["ethernet", "wifi_ap", "hybrid"],
     "config_schema": {
         "output_dir": {"type": "string", "required": True},
-        "format": {"type": "string", "enum": ["html", "markdown", "both"], "default": "both"},
+        "format": {
+            "type": "string",
+            "enum": ["html", "markdown", "both"],
+            "default": "both",
+        },
     },
     "events": ["shutdown"],
     "health_check": True,

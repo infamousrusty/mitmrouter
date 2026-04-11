@@ -1,4 +1,5 @@
 """Unit tests for inventory_tracker addon."""
+
 from __future__ import annotations
 
 import json

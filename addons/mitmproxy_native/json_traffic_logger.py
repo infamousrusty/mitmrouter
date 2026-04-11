@@ -1,4 +1,5 @@
 """JSON Traffic Logger – structured JSONL log of all flows."""
+
 from __future__ import annotations
 
 import json

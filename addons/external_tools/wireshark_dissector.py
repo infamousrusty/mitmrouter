@@ -1,4 +1,5 @@
 """Wireshark/TShark Dissector – protocol dissection via TShark."""
+
 from __future__ import annotations
 
 import subprocess
@@ -104,7 +105,7 @@ class WiresharkDissector(AbstractAddon):
             )
             if result.returncode == 0:
                 out_file.write_bytes(result.stdout)
-                ctx.log.info(f"[tshark] dissection written \u2192 {out_file}")
+                ctx.log.info(f"[tshark] dissection written → {out_file}")
             else:
                 ctx.log.error(
                     f"[tshark] exited {result.returncode}: {result.stderr.decode()[:500]}"
@@ -129,7 +130,10 @@ class WiresharkDissector(AbstractAddon):
 
     def health_check(self) -> dict[str, Any]:  # noqa: ANN401
         available = self._check_tool()
-        return {"status": "healthy" if available else "degraded", "tshark_available": available}
+        return {
+            "status": "healthy" if available else "degraded",
+            "tshark_available": available,
+        }
 
 
 addons = [WiresharkDissector()]

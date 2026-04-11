@@ -1,4 +1,5 @@
 """Inventory Tracker – extract and catalogue HTTP/S endpoints and APIs."""
+
 from __future__ import annotations
 
 import csv
@@ -124,17 +125,26 @@ class InventoryTracker(AbstractAddon):
                 ),
                 encoding="utf-8",
             )
-            ctx.log.info(f"[inventory_tracker] exported JSON \u2192 {out}")
+            ctx.log.info(f"[inventory_tracker] exported JSON → {out}")
 
         if self._format in ("csv", "both"):
             out = self._output_dir / f"inventory_{ts}.csv"
-            fields = ["timestamp", "host", "scheme", "method", "path", "status_code",
-                      "content_type", "content_length", "seen_count"]
+            fields = [
+                "timestamp",
+                "host",
+                "scheme",
+                "method",
+                "path",
+                "status_code",
+                "content_type",
+                "content_length",
+                "seen_count",
+            ]
             with out.open("w", newline="", encoding="utf-8") as f:
                 writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
                 writer.writeheader()
                 writer.writerows(self._endpoints)
-            ctx.log.info(f"[inventory_tracker] exported CSV \u2192 {out}")
+            ctx.log.info(f"[inventory_tracker] exported CSV → {out}")
 
     def cmd_export(self) -> str:
         self.export()

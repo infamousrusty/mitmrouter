@@ -1,4 +1,5 @@
 """Unit tests for certificate_logger addon."""
+
 from __future__ import annotations
 
 import pytest

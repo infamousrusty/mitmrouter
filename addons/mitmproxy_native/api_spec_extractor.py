@@ -1,4 +1,5 @@
 """API Spec Extractor – generate OpenAPI 3.0 specs from captured HTTP traffic."""
+
 from __future__ import annotations
 
 import json
@@ -166,6 +167,7 @@ class APISpecExtractor(AbstractAddon):
 
         try:
             import yaml  # optional dep
+
             with self._output_file.open("w", encoding="utf-8") as f:
                 yaml.dump(self._spec, f, default_flow_style=False, allow_unicode=True)
         except ImportError:

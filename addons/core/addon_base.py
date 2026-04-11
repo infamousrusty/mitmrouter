@@ -1,4 +1,5 @@
 """Abstract base class for all mitmrouter addons."""
+
 from __future__ import annotations
 
 import abc
@@ -64,6 +65,7 @@ class AbstractAddon(abc.ABC):
     def manifest(cls) -> dict[str, Any]:  # noqa: ANN401
         """Return the addon manifest declared in the module."""
         import sys
+
         mod = sys.modules.get(cls.__module__)
         if mod and hasattr(mod, "__addon_manifest__"):
             return mod.__addon_manifest__

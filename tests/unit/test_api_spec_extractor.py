@@ -1,4 +1,5 @@
 """Unit tests for api_spec_extractor addon."""
+
 from __future__ import annotations
 
 import json
@@ -10,7 +11,6 @@ from addons.mitmproxy_native.api_spec_extractor import APISpecExtractor
 
 @pytest.mark.light
 class TestAPISpecExtractor:
-
     def test_tracks_server(self, sample_http_flow):
         extractor = APISpecExtractor()
         extractor.response(sample_http_flow)
@@ -44,6 +44,7 @@ class TestAPISpecExtractor:
     def test_export_writes_json_without_yaml(self, tmp_path, monkeypatch):
         """When pyyaml is absent, extractor falls back to JSON."""
         import builtins
+
         real_import = builtins.__import__
 
         def mock_import(name, *args, **kwargs):
@@ -53,7 +54,9 @@ class TestAPISpecExtractor:
 
         extractor = APISpecExtractor()
         extractor._output_file = tmp_path / "spec.yaml"
-        extractor._spec["paths"]["/test"] = {"get": {"responses": {"200": {"description": "ok"}}}}
+        extractor._spec["paths"]["/test"] = {
+            "get": {"responses": {"200": {"description": "ok"}}}
+        }
 
         monkeypatch.setattr(builtins, "__import__", mock_import)
         extractor._write_spec()

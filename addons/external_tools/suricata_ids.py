@@ -1,4 +1,5 @@
 """Suricata IDS – signature-based threat detection on captured PCAP."""
+
 from __future__ import annotations
 
 import json
@@ -22,7 +23,10 @@ __addon_manifest__ = {
     "config_schema": {
         "output_dir": {"type": "string", "required": True},
         "pcap_file": {"type": "string", "required": True},
-        "suricata_config": {"type": "string", "default": "/etc/suricata/suricata.yaml"},
+        "suricata_config": {
+            "type": "string",
+            "default": "/etc/suricata/suricata.yaml",
+        },
         "timeout_seconds": {"type": "integer", "default": 180},
     },
     "events": ["shutdown"],
@@ -88,9 +92,12 @@ class SuricataIDS(AbstractAddon):
 
         cmd = [
             "suricata",
-            "-r", str(self._pcap_file),
-            "-c", self._config_file,
-            "-l", str(self._output_dir),
+            "-r",
+            str(self._pcap_file),
+            "-c",
+            self._config_file,
+            "-l",
+            str(self._output_dir),
             "--runmode=single",
         ]
 
@@ -144,7 +151,10 @@ class SuricataIDS(AbstractAddon):
 
     def health_check(self) -> dict[str, Any]:  # noqa: ANN401
         available = self._check_tool()
-        return {"status": "healthy" if available else "degraded", "suricata_available": available}
+        return {
+            "status": "healthy" if available else "degraded",
+            "suricata_available": available,
+        }
 
 
 addons = [SuricataIDS()]

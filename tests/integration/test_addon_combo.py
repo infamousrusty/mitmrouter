@@ -1,4 +1,5 @@
 """Integration tests – multiple addons sharing the same flow context."""
+
 from __future__ import annotations
 
 import pytest
@@ -34,8 +35,8 @@ def test_inventory_and_json_logger_coexist(sample_http_flow, tmp_path):
 @pytest.mark.light
 def test_inventory_and_api_spec_coexist(sample_http_flow, sample_post_flow, tmp_path):
     """inventory_tracker and api_spec_extractor should coexist on the same flows."""
-    from addons.mitmproxy_native.inventory_tracker import InventoryTracker
     from addons.mitmproxy_native.api_spec_extractor import APISpecExtractor
+    from addons.mitmproxy_native.inventory_tracker import InventoryTracker
 
     inventory = InventoryTracker()
     inventory._output_dir = tmp_path

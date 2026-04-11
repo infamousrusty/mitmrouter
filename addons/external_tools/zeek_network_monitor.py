@@ -1,4 +1,5 @@
 """Zeek Network Monitor – high-level protocol analysis via Zeek."""
+
 from __future__ import annotations
 
 import logging
@@ -108,7 +109,9 @@ class ZeekNetworkMonitor(AbstractAddon):
                 logs = self._parse_logs()
                 ctx.log.info(f"[zeek] analysis complete; {len(logs)} log files produced")
             else:
-                ctx.log.error(f"[zeek] exited {result.returncode}: {result.stderr.decode()[:500]}")
+                ctx.log.error(
+                    f"[zeek] exited {result.returncode}: {result.stderr.decode()[:500]}"
+                )
         except subprocess.TimeoutExpired:
             ctx.log.error("[zeek] analysis timed out")
         except Exception as exc:  # noqa: BLE001
@@ -142,7 +145,10 @@ class ZeekNetworkMonitor(AbstractAddon):
 
     def health_check(self) -> dict[str, Any]:  # noqa: ANN401
         available = self._check_tool()
-        return {"status": "healthy" if available else "degraded", "zeek_available": available}
+        return {
+            "status": "healthy" if available else "degraded",
+            "zeek_available": available,
+        }
 
 
 addons = [ZeekNetworkMonitor()]

@@ -1,14 +1,16 @@
 """Shared pytest fixtures for mitmrouter addon tests."""
+
 from __future__ import annotations
 
 import pytest
-from mitmproxy.test import tflow, taddons
 from mitmproxy import http
+from mitmproxy.test import taddons, tflow
 
 
 # ------------------------------------------------------------------ #
 # Flow fixtures                                                       #
 # ------------------------------------------------------------------ #
+
 
 @pytest.fixture
 def sample_http_flow() -> http.HTTPFlow:
@@ -56,6 +58,7 @@ def https_flow() -> http.HTTPFlow:
 # ------------------------------------------------------------------ #
 # Addon context fixture                                               #
 # ------------------------------------------------------------------ #
+
 
 @pytest.fixture
 def addon_ctx():
