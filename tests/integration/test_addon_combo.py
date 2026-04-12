@@ -27,8 +27,9 @@ def test_inventory_and_json_logger_coexist(
     logger._output_file = log_file
     logger._fh = log_file.open("a", encoding="utf-8")
 
-    with taddons.context(inventory, logger) as tctx:
-        tctx.master.addons.trigger(http.HttpResponseHook(sample_http_flow))
+    with taddons.context(inventory, logger):
+        inventory.response(sample_http_flow)
+        logger.response(sample_http_flow)
 
     logger._fh.close()
 
@@ -54,9 +55,11 @@ def test_inventory_and_api_spec_coexist(
     extractor = APISpecExtractor()
     extractor._output_file = tmp_path / "spec.yaml"
 
-    with taddons.context(inventory, extractor) as tctx:
-        tctx.master.addons.trigger(http.HttpResponseHook(sample_http_flow))
-        tctx.master.addons.trigger(http.HttpResponseHook(sample_post_flow))
+    with taddons.context(inventory, extractor):
+        inventory.response(sample_http_flow)
+        extractor.response(sample_http_flow)
+        inventory.response(sample_post_flow)
+        extractor.response(sample_post_flow)
 
     assert len(inventory._endpoints) == 2
     assert "/v1/users" in extractor._spec["paths"]
