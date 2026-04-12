@@ -1,0 +1,72 @@
+# MITMRouter — SSL Pinning Bypass Profile
+# ---------------------------------------------------------------------------
+# Focused on identifying and bypassing certificate pinning in mobile and
+# IoT applications during authorised security assessments.
+# ---------------------------------------------------------------------------
+
+network:
+  wan_interface: eth0
+  wlan_interface: wlan0
+  bridge_name: br0
+
+wifi:
+  ssid: "${MITMROUTER_PINTEST_SSID:-PinBypassAP}"
+  channel: 6
+  standard: g
+  password: "${MITMROUTER_WIFI_PASSWORD}"
+  hidden: false
+
+dhcp:
+  start_ip: 192.168.203.100
+  end_ip: 192.168.203.150
+  subnet_mask: 255.255.255.0
+  gateway: 192.168.203.1
+  lease_time: 3600
+
+mitmproxy:
+  version: "10.4.2"
+  listen_port: 8080
+  web_port: 8081
+  mode: "transparent"
+  log_level: debug
+  # Accept connections where client rejects mitmproxy cert (pinning detected)
+  ssl_insecure: true
+  # Log pinning failures explicitly
+  log_ssl_errors: true
+
+logging:
+  level: DEBUG
+  output: /var/log/mitmrouter/pinning.log
+
+evidence:
+  output_dir: /var/log/mitmrouter/evidence/pinning
+  formats:
+    - json
+    - pcap
+
+# Certificate pinning detection focus
+pinning:
+  # Hosts where connections fail due to pinning will be recorded separately
+  record_pinned_hosts: true
+  pinned_hosts_output: /var/log/mitmrouter/evidence/pinning/pinned_hosts.json
+
+addons:
+  enabled:
+    - certificate_logger
+    - inventory_tracker
+    - json_traffic_logger
+    - api_spec_extractor
+  disabled:
+    - suricata_ids
+    - wireshark_dissector
+    - zeek_network_monitor
+  config:
+    certificate_logger:
+      output_dir: /var/log/mitmrouter/evidence/pinning/certs
+    inventory_tracker:
+      format: json
+      include_query_params: true
+    json_traffic_logger:
+      body_preview_bytes: 1024
+      # Preserve auth headers for pinning analysis (operator's responsibility)
+      redact_headers: []

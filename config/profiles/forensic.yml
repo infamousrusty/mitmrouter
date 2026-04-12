@@ -1,0 +1,69 @@
+# MITMRouter — Forensic Profile
+# ---------------------------------------------------------------------------
+# Conservative, high-fidelity capture for forensic investigations.
+# Passive mode: capture everything, modify nothing.
+# Enables Zeek and Suricata for deep post-session analysis.
+# Requires: zeek and suricata installed on the host.
+# ---------------------------------------------------------------------------
+
+network:
+  wan_interface: eth0
+  wlan_interface: wlan0
+  bridge_name: br0
+
+wifi:
+  ssid: "${MITMROUTER_WIFI_PASSWORD}"
+  channel: 11
+  standard: g
+  password: "${MITMROUTER_WIFI_PASSWORD}"
+  hidden: true
+
+dhcp:
+  start_ip: 192.168.202.100
+  end_ip: 192.168.202.150
+  subnet_mask: 255.255.255.0
+  gateway: 192.168.202.1
+  lease_time: 7200
+
+mitmproxy:
+  version: "10.4.2"
+  listen_port: 8080
+  web_port: 8081
+  mode: "transparent"
+  log_level: info
+  # Do not modify responses in forensic mode
+  modify_responses: false
+
+logging:
+  level: INFO
+  output: /var/log/mitmrouter/forensic.log
+
+evidence:
+  output_dir: /var/log/mitmrouter/evidence/forensic
+  formats:
+    - json
+    - pcap
+    - sqlite
+
+addons:
+  enabled:
+    - inventory_tracker
+    - json_traffic_logger
+    - certificate_logger
+    - zeek_network_monitor
+    - suricata_ids
+  disabled:
+    - api_spec_extractor
+    - wireshark_dissector
+  config:
+    inventory_tracker:
+      format: both
+      include_query_params: true
+    json_traffic_logger:
+      body_preview_bytes: 4096
+    zeek_network_monitor:
+      output_dir: /var/log/mitmrouter/evidence/forensic/zeek
+      timeout_seconds: 300
+    suricata_ids:
+      output_dir: /var/log/mitmrouter/evidence/forensic/suricata
+      timeout_seconds: 300

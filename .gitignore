@@ -1,0 +1,57 @@
+# MITMRouter .gitignore
+
+# Environment / secrets
+.env
+*.env
+.envrc
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+.venv/
+venv/
+env/
+.tox/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+coverage.xml
+.coverage
+
+# mitmproxy
+*.pem
+*.p12
+~/.mitmproxy/
+
+# Evidence / captures — never commit real traffic data
+/var/log/mitmrouter/
+evidence/
+*.pcap
+*.pcapng
+*.har
+traffic.jsonl
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.code-workspace
+
+# Release / build artefacts
+dist/
+*.tar.gz
+*.sig
+*.sigstore
+SHA256SUMS.txt
