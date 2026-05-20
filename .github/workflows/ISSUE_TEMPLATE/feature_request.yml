@@ -1,0 +1,51 @@
+name: Feature Request
+description: Propose a new feature or enhancement for MitmRouter.
+title: "feat: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature.  Please describe the
+        use case and how you imagine it working.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What problem would this feature solve?
+      placeholder: |
+        I'm trying to accomplish X, but MitmRouter does not support Y...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How should it work?
+      placeholder: |
+        A new addon / CLI flag / profile setting that...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any workarounds or alternative approaches you have tried.
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: What area of MitmRouter would this affect?
+      options:
+        - "New addon"
+        - "Existing addon enhancement"
+        - "CLI / configuration"
+        - "Documentation"
+        - "CI / tooling"
+        - "Other"
+    validations:
+      required: true
