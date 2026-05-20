@@ -1,167 +1,127 @@
-"""Certificate Logger – extract and catalogue TLS/SSL certificates."""
+"""Certificate Logger Addon — v2.1-B (cryptography.x509 API).
+
+Captures every TLS certificate seen during a mitmproxy session and
+writes a structured JSON inventory to disk.  Uses only the
+``cryptography.x509`` API (mitmproxy >= 10.3).
+
+Output file: ``certificates_<ISO8601-timestamp>.json`` in the
+configured ``output_dir``.
+"""
 
 from __future__ import annotations
 
-import csv
 import hashlib
 import json
-import logging
+import os
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
-from mitmproxy import http
+from cryptography import x509
+from cryptography.x509.oid import ExtensionOID, NameOID
 
-from addons.core.addon_base import AbstractAddon
+from addons.base import AbstractAddon
 
-logger = logging.getLogger(__name__)
 
-__addon_manifest__ = {
-    "name": "certificate_logger",
-    "class_name": "CertificateLogger",
-    "version": "1.0.0",
-    "author": "mitmrouter-core",
-    "description": "Extract and track TLS/SSL certificates, issuers, validity dates, and SANs",
-    "dependencies": {"python": ["cryptography"], "system": []},
-    "mitmproxy_api_version": ">=9.0.0",
-    "supported_modes": ["ethernet", "wifi_ap", "hybrid"],
-    "config_schema": {
-        "output_dir": {"type": "string", "required": True},
-    },
-    "events": ["response"],
-    "health_check": True,
-    "test_footprint": "light",
-    "ci_bundled": True,
-    "external_tool_integration": None,
-}
+def _sanitize_name(name: x509.Name) -> dict[str, list[str]]:
+    """Extract all RDNs from an x509 Name into a stable dict.
 
-_CSV_FIELDS = [
-    "timestamp",
-    "host",
-    "subject",
-    "issuer",
-    "not_valid_before",
-    "not_valid_after",
-    "fingerprint_sha256",
-]
+    Returns a mapping like ``{"CN": ["example.com"], "O": ["Acme Corp"]}``.
+    """
+    result: dict[str, list[str]] = {}
+    for attr in name:
+        oid_name: str = attr.oid._name  # e.g. "commonName", "organizationName"
+        value: str = str(attr.value)
+        result.setdefault(oid_name, []).append(value)
+    return result
+
+
+def _extract_sans(cert: x509.Certificate) -> list[str]:
+    """Return DNS-name SANs from a certificate, or an empty list."""
+    try:
+        ext = cert.extensions.get_extension_for_oid(
+            ExtensionOID.SUBJECT_ALTERNATIVE_NAME
+        )
+        return ext.value.get_values_for_type(x509.DNSName)  # type: ignore[attr-defined]
+    except x509.ExtensionNotFound:
+        return []
+
+
+def _utc_iso(dt: datetime | None) -> str | None:
+    """Format an optional datetime as ISO‑8601 UTC string."""
+    if dt is None:
+        return None
+    return dt.isoformat()
 
 
 class CertificateLogger(AbstractAddon):
-    """Log TLS certificates from intercepted HTTPS flows."""
+    """Persist every TLS certificate to a JSON inventory."""
 
-    def __init__(self) -> None:
-        self._certs: list[dict[str, Any]] = []
-        self._seen: set[str] = set()
-        self._output_dir: Path | None = None
+    name = "certificate_logger"
+    description = "Log every intercepted TLS certificate to a JSON inventory."
 
-    def load(self, loader: Any) -> None:  # noqa: ANN401
-        loader.add_option(
-            name="certs_output_dir",
-            typespec=str,
-            default="/tmp/mitmrouter/certs",
-            help="Directory for certificate log files",
-        )
-        loader.add_command("certs_export", self.cmd_export)
-        loader.add_command("certs_status", self.cmd_status)
+    DEFAULT_FILENAME: str = "certificates"
 
-    def configure(self, updated: set[str]) -> None:
-        from mitmproxy import ctx
+    # ── AbstractAddon interface ──────────────────────────────────────
+    @property
+    def category(self) -> str:
+        return "mitmproxy_native"
 
-        if "certs_output_dir" in updated:
-            self._output_dir = Path(ctx.options.certs_output_dir)
-            self._output_dir.mkdir(parents=True, exist_ok=True)
+    @classmethod
+    def manifest(cls) -> dict[str, Any]:
+        return {
+            "name": cls.name,
+            "description": cls.description,
+            "category": "mitmproxy_native",
+            "version": "2.1.0",
+            "min_mitmproxy": "10.3.0",
+            "outputs": ["certificates_*.json"],
+        }
 
-    def response(self, flow: http.HTTPFlow) -> None:
-        if flow.request.scheme != "https":
-            return
-        if not (flow.server_conn and flow.server_conn.tls_established):
-            return
-        cert = getattr(flow.server_conn, "cert", None)
+    def configure(self, output_dir: str) -> None:
+        self.output_dir: str = output_dir
+        os.makedirs(self.output_dir, exist_ok=True)
+
+    def tls_clienthello(self, flow) -> None:
+        """No-op: we capture on ``tls_established`` instead."""
+        pass
+
+    def tls_established(self, flow) -> None:
+        """mitmproxy calls this hook when a TLS handshake completes.
+
+        In mitmproxy >= 10.3, ``flow.server_conn.certificate`` is a
+        ``cryptography.x509.Certificate``.  We delegate to ``_extract()``.
+        """
+        cert = getattr(flow.server_conn, "certificate", None)
         if cert is None:
             return
+        record = self._extract(cert)
+        self._persist(record)
 
-        info = self._extract(cert, flow.request.host)
-        fp = info.get("fingerprint_sha256", "")
-        if fp and fp not in self._seen:
-            self._certs.append(info)
-            self._seen.add(fp)
-            logger.debug("[certificate_logger] logged cert for %s", flow.request.host)
+    # ── Internals ────────────────────────────────────────────────────
+    def _extract(self, cert: x509.Certificate) -> dict[str, Any]:
+        """Build a serialisable dict from a ``cryptography.x509.Certificate``.
 
-    def shutdown(self) -> None:
-        self.export()
+        Uses only the ``cryptography`` API — **no pyOpenSSL**.
+        """
+        return {
+            "serial_number": format(cert.serial_number, "x"),
+            "fingerprint_sha256": cert.fingerprint(
+                hashlib.sha256()
+            ).hex(),
+            "subject": _sanitize_name(cert.subject),
+            "issuer": _sanitize_name(cert.issuer),
+            "not_valid_before": _utc_iso(cert.not_valid_before_utc),
+            "not_valid_after": _utc_iso(cert.not_valid_after_utc),
+            "san_dns_names": _extract_sans(cert),
+            "version": cert.version.name,
+            "signature_algorithm_oid": cert.signature_algorithm_oid.dotted_string,
+            "public_key_algorithm": cert.public_key().__class__.__name__,
+            "captured_at_utc": datetime.now(timezone.utc).isoformat(),
+        }
 
-    @staticmethod
-    def _extract(cert: Any, host: str) -> dict[str, Any]:  # noqa: ANN401
-        """Extract structured info from a mitmproxy certificate object."""
-        try:
-            import cryptography  # noqa: F401
-        except ImportError:
-            logger.warning("[certificate_logger] cryptography library not installed")
-            return {}
-
-        try:
-            cn = cert.get_subject().CN or ""
-            issuer = cert.get_issuer().CN or ""
-            not_before = cert.get_notBefore().decode()
-            not_after = cert.get_notAfter().decode()
-            serialization = __import__(
-                "cryptography.hazmat.primitives.serialization",
-                fromlist=["Encoding"],
-            )
-            fingerprint = hashlib.sha256(
-                cert.to_cryptography().public_bytes(serialization.Encoding.DER)
-            ).hexdigest()
-
-            return {
-                "timestamp": datetime.now(tz=timezone.utc).isoformat(),
-                "host": host,
-                "subject": cn,
-                "issuer": issuer,
-                "not_valid_before": not_before,
-                "not_valid_after": not_after,
-                "fingerprint_sha256": fingerprint,
-            }
-        except Exception as exc:  # noqa: BLE001
-            logger.error("[certificate_logger] extraction error: %s", exc)
-            return {}
-
-    def export(self) -> None:
-        if self._output_dir is None:
-            return
-        ts = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
-
-        json_out = self._output_dir / f"certificates_{ts}.json"
-        json_out.write_text(
-            json.dumps(
-                {
-                    "export_time": datetime.now(tz=timezone.utc).isoformat(),
-                    "unique_certificates": len(self._certs),
-                    "certificates": self._certs,
-                },
-                indent=2,
-            ),
-            encoding="utf-8",
-        )
-
-        csv_out = self._output_dir / f"certificates_{ts}.csv"
-        with csv_out.open("w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=_CSV_FIELDS, extrasaction="ignore")
-            writer.writeheader()
-            writer.writerows(self._certs)
-
-        logger.info(
-            "[certificate_logger] exported %d certs to %s", len(self._certs), self._output_dir
-        )
-
-    def cmd_export(self) -> str:
-        self.export()
-        return f"Exported {len(self._certs)} unique certificates"
-
-    def cmd_status(self) -> str:
-        return f"Unique certificates tracked: {len(self._certs)}"
-
-    def health_check(self) -> dict[str, Any]:  # noqa: ANN401
-        return {"status": "healthy", "unique_certs": len(self._certs)}
-
-
-addons = [CertificateLogger()]
+    def _persist(self, record: dict[str, Any]) -> None:
+        timestamp: str = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        fname: str = f"{self.DEFAULT_FILENAME}_{timestamp}.json"
+        path: str = os.path.join(self.output_dir, fname)
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(record, fh, indent=2, sort_keys=True)

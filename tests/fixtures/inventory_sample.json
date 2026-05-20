@@ -1,0 +1,30 @@
+[
+  {
+    "method": "GET",
+    "host": "api.example.com",
+    "path": "/v1/users",
+    "status_code": 200,
+    "content_type": "application/json"
+  },
+  {
+    "method": "POST",
+    "host": "api.example.com",
+    "path": "/v1/users",
+    "status_code": 201,
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "host": "api.example.com",
+    "path": "/v1/orders",
+    "status_code": 200,
+    "content_type": "application/json"
+  },
+  {
+    "method": "GET",
+    "host": "cdn.example.com",
+    "path": "/assets/logo.png",
+    "status_code": 200,
+    "content_type": "image/png"
+  }
+]

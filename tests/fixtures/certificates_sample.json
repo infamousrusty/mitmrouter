@@ -1,0 +1,46 @@
+[
+  {
+    "serial_number": "499602d2",
+    "fingerprint_sha256": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+    "subject": {
+      "countryName": ["US"],
+      "stateOrProvinceName": ["California"],
+      "localityName": ["San Francisco"],
+      "organizationName": ["Example Corp"],
+      "commonName": ["api.example.com"]
+    },
+    "issuer": {
+      "countryName": ["US"],
+      "organizationName": ["Example CA"],
+      "commonName": ["Example Root CA"]
+    },
+    "not_valid_before": "2024-01-01T00:00:00+00:00",
+    "not_valid_after": "2025-01-01T00:00:00+00:00",
+    "san_dns_names": ["api.example.com", "*.example.com"],
+    "version": "v3",
+    "signature_algorithm_oid": "1.2.840.113549.1.1.11",
+    "public_key_algorithm": "RSAPublicKey",
+    "captured_at_utc": "2024-06-15T10:30:00+00:00"
+  },
+  {
+    "serial_number": "abcdef1234",
+    "fingerprint_sha256": "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
+    "subject": {
+      "countryName": ["US"],
+      "organizationName": ["CDN Inc"],
+      "commonName": ["cdn.example.com"]
+    },
+    "issuer": {
+      "countryName": ["US"],
+      "organizationName": ["CDN CA"],
+      "commonName": ["CDN Root CA"]
+    },
+    "not_valid_before": "2024-03-01T00:00:00+00:00",
+    "not_valid_after": "2025-03-01T00:00:00+00:00",
+    "san_dns_names": ["cdn.example.com", "*.cdn.example.com"],
+    "version": "v3",
+    "signature_algorithm_oid": "1.2.840.113549.1.1.11",
+    "public_key_algorithm": "RSAPublicKey",
+    "captured_at_utc": "2024-06-15T10:30:05+00:00"
+  }
+]
