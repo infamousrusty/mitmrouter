@@ -1,0 +1,12 @@
+{"host": "api.example.com", "method": "GET", "path": "/v1/users", "status": 200}
+{"host": "api.example.com", "method": "POST", "path": "/v1/users", "status": 201}
+{"host": "api.example.com", "method": "GET", "path": "/v1/users", "status": 200}
+{"host": "api.example.com", "method": "GET", "path": "/v1/orders", "status": 200}
+{"host": "api.example.com", "method": "GET", "path": "/v1/health", "status": 200}
+{"host": "cdn.example.com", "method": "GET", "path": "/assets/logo.png", "status": 200}
+{"host": "cdn.example.com", "method": "GET", "path": "/assets/style.css", "status": 200}
+{"host": "cdn.example.com", "method": "GET", "path": "/assets/app.js", "status": 200}
+{"host": "auth.example.com", "method": "POST", "path": "/oauth/token", "status": 200}
+{"host": "auth.example.com", "method": "POST", "path": "/oauth/token", "status": 200}
+{"host": "auth.example.com", "method": "POST", "path": "/oauth/token", "status": 401}
+{"host": "api.example.com", "method": "GET", "path": "/v1/users", "status": 200}

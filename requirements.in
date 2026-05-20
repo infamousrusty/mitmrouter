@@ -1,0 +1,6 @@
+# MitmRouter — direct runtime dependencies
+# Use: pip-compile requirements.in --generate-hashes -o requirements.txt
+
+mitmproxy>=10.3.0
+cryptography>=41.0.0
+pyyaml>=6.0

@@ -1,0 +1,19 @@
+openapi: "3.0.3"
+info:
+  title: Sample API
+  version: "1.0.0"
+paths:
+  /v1/users:
+    get:
+      summary: List users
+    post:
+      summary: Create user
+  /v1/users/{id}:
+    get:
+      summary: Get user by ID
+  /v1/orders:
+    get:
+      summary: List orders
+  /v1/health:
+    get:
+      summary: Health check

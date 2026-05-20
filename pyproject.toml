@@ -1,15 +1,54 @@
-[tool.ruff]
-# Pin behaviour to match CI: ruff==0.4.4, Python 3.10 minimum target.
-target-version = "py310"
-line-length = 88
-preview = false
+[project]
+name = "mitmrouter"
+version = "0.2.0"
+description = "Extensible mitmproxy addon ecosystem for traffic capture, analysis, and reporting."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "MitmRouter Contributors" }
+]
+keywords = ["mitmproxy", "network", "security", "addon", "traffic-analysis"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: System :: Networking :: Monitoring",
+]
+dependencies = [
+    "mitmproxy>=10.3.0",
+    "cryptography>=41.0.0",
+    "pyyaml>=6.0",
+]
 
-[tool.ruff.format]
-# Black-compatible defaults.
-quote-style = "double"
-indent-style = "space"
-skip-magic-trailing-comma = false
-line-ending = "auto"
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.4.0",
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+    "pip-tools>=7.0.0",
+]
+
+[project.entry-points."mitmrouter.addons"]
+inventory_tracker = "addons.mitmproxy_native.inventory_tracker:InventoryTracker"
+json_traffic_logger = "addons.mitmproxy_native.json_traffic_logger:JsonTrafficLogger"
+certificate_logger = "addons.mitmproxy_native.certificate_logger:CertificateLogger"
+api_spec_extractor = "addons.mitmproxy_native.api_spec_extractor:ApiSpecExtractor"
+wireshark_dissector = "addons.external_tools.wireshark_dissector:WiresharkDissector"
+zeek_network_monitor = "addons.external_tools.zeek_network_monitor:ZeekNetworkMonitor"
+suricata_ids = "addons.external_tools.suricata_ids:SuricataIds"
+session_report = "addons.reporting.session_report:SessionReportAddon"
+
+# ── Tool configurations ──────────────────────────────────────────────
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
 
 [tool.ruff.lint]
 select = [
@@ -17,25 +56,52 @@ select = [
     "W",   # pycodestyle warnings
     "F",   # pyflakes
     "I",   # isort
-    "UP",  # pyupgrade
     "B",   # flake8-bugbear
     "C4",  # flake8-comprehensions
-    "ANN", # flake8-annotations (partial)
-    "BLE", # flake8-blind-except
-    "ARG", # flake8-unused-arguments
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
 ]
 ignore = [
-    "ANN101",  # missing self annotation
-    "ANN102",  # missing cls annotation
-    "ANN401",  # Any annotations – used intentionally in addon ABC
-    "E501",    # line too long – handled by formatter
+    "E501", # line too long (handled by formatter)
 ]
 
+[tool.ruff.format]
+quote-style = "double"
+docstring-code-format = true
+
+[tool.ruff.lint.isort]
+known-first-party = ["addons"]
+
+# ── Pytest configuration (was pytest.ini) ────────────────────────────
+
 [tool.pytest.ini_options]
+minversion = "8.0"
 testpaths = ["tests"]
-markers = [
-    "light: fast unit tests with no external dependencies",
-    "medium: integration tests using mitmproxy test harness only",
-    "heavy: tests requiring external system tools (tshark, zeek, suricata)",
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--tb=short",
+    "--cov=addons",
+    "--cov-report=term-missing",
 ]
-addopts = "-ra -q"
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning:mitmproxy.*",
+]
+
+# ── Coverage configuration ───────────────────────────────────────────
+
+[tool.coverage.run]
+source = ["addons"]
+omit = ["tests/*", "*/test_*.py"]
+
+[tool.coverage.report]
+exclude_also = [
+    "if __name__ == .__main__.:",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]

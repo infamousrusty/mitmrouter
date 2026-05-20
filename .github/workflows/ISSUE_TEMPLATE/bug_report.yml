@@ -1,0 +1,82 @@
+name: Bug Report
+description: Report a defect or unexpected behaviour in MitmRouter.
+title: "bug: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to file a bug report.
+        Please fill out the sections below so we can reproduce the issue.
+
+  - type: input
+    id: version
+    attributes:
+      label: MitmRouter version
+      description: Output of `mitmrouter --version` or the Git commit hash.
+      placeholder: "e.g., 1.0.0 or abc1234"
+    validations:
+      required: true
+
+  - type: input
+    id: mitmproxy_version
+    attributes:
+      label: mitmproxy version
+      description: Output of `mitmproxy --version`.
+      placeholder: "e.g., 10.3.1"
+    validations:
+      required: true
+
+  - type: input
+    id: platform
+    attributes:
+      label: Operating system
+      description: OS and architecture.
+      placeholder: "e.g., Ubuntu 22.04 x86_64, macOS 14 arm64"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug description
+      description: What happened? What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: |
+        1. Configured profile '...'
+        2. Ran command '...'
+        3. Observed error '...'
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Paste any log output or stack traces.
+      render: text
+
+  - type: dropdown
+    id: addon
+    attributes:
+      label: Affected addon
+      description: Which addon is involved?
+      options:
+        - "Unknown / Not sure"
+        - "inventory_tracker"
+        - "json_traffic_logger"
+        - "certificate_logger"
+        - "api_spec_extractor"
+        - "wireshark_dissector"
+        - "zeek_network_monitor"
+        - "suricata_ids"
+        - "session_report"
+        - "Other"
+    validations:
+      required: true

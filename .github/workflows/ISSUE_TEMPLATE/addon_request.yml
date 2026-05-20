@@ -1,0 +1,61 @@
+name: Addon Request
+description: Propose a new addon for the MitmRouter ecosystem.
+title: "addon: "
+labels: ["addon", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to propose a new addon.  Review
+        [ADR-004](../docs/adr/ADR-004-three-tier-addon-categories.md)
+        for guidance on categories.
+
+  - type: input
+    id: addon_name
+    attributes:
+      label: Addon name
+      description: A short, unique, snake_case identifier.
+      placeholder: "e.g., grpc_traffic_decoder"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: Which tier does this addon belong to?
+      options:
+        - "mitmproxy_native"
+        - "external_tools"
+        - "reporting"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What does the addon do?  What problem does it solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: inputs_outputs
+    attributes:
+      label: Inputs and outputs
+      description: |
+        What mitmproxy hooks does it use?  What artefacts does it produce?
+        Reference the manifest schema in
+        [ADR-003](../docs/adr/ADR-003-addon-manifest-schema.md).
+      placeholder: |
+        Hooks: request, response
+        Outputs: grpc_schema_*.json
+        Consumes: traffic.jsonl
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: External dependencies
+      description: |
+        Any tools or libraries beyond what is already in requirements.txt?
+        New runtime dependencies require strong justification.
